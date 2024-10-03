@@ -64,13 +64,13 @@
         }
 
         .info-card h2 {
-            font-size: 1.2rem; /* Increased font size for KPI titles */
+            font-size: 1.6rem; /* Increased font size for KPI titles */
             color: #f4f4f4;
             margin-bottom: 8px;
         }
 
         .info-card .value {
-            font-size: 1.8rem; /* Increased font size for KPI values */
+            font-size: 1.6rem; /* Increased font size for KPI values */
             font-weight: 700;
             color: #1abc9c;
             transition: all 0.3s ease-in-out; /* Smooth transition */
@@ -187,13 +187,11 @@
     <div class="chart-container">
         <!-- Population Demographics Chart -->
         <div class="chart-box">
-            
             <iframe src="pop_demo_male_female.html"></iframe>
         </div>
 
         <!-- GDP Growth Chart -->
         <div class="chart-box">
-            
             <iframe id="gdpIframe" src="gdp_growth.html"></iframe>
         </div>
     </div>
@@ -201,13 +199,11 @@
     <div class="chart-container">
         <!-- Health Expenditure Chart -->
         <div class="chart-box">
-            
             <iframe src="health_gdp_stack_bar.html"></iframe>
         </div>
 
         <!-- Life Expectancy Chart -->
         <div class="chart-box">
-            
             <iframe src="life_expectancy.html"></iframe>
         </div>
     </div>
@@ -215,7 +211,6 @@
     <div class="chart-container">
         <!-- Import/Export Chart -->
         <div class="chart-box">
-            
             <iframe src="import_export.html"></iframe>
         </div>
     </div>
@@ -223,9 +218,9 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const populationData = {
-                "2010": {"Norway": 4890000, "Sweden": 9380000},
-                "2015": {"Norway": 5190000, "Sweden": 9840000},
-                "2021": {"Norway": 5400000, "Sweden": 10320000}
+                "2010": {"Norway": 4_890_000, "Sweden": 9_380_000},
+                "2015": {"Norway": 5_190_000, "Sweden": 9_840_000},
+                "2021": {"Norway": 5_400_000, "Sweden": 10_320_000}
             };
 
             const gdpData = {
@@ -252,10 +247,21 @@
                 "2021": {"Norway": 9.5, "Sweden": 9.3}
             };
 
+            // Function to format the population with commas
+            function formatPopulation(population) {
+                return population.toLocaleString(); // Adds commas
+            }
+
+            // Function to convert GDP from millions to billions and format with dollar sign and commas
+            function formatGDP(gdpInMillions) {
+                const gdpInBillions = gdpInMillions / 1000;  // Convert to billions
+                return `$${gdpInBillions.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} billion`;
+            }
+
             // Function to update the KPI values
             function updateKPIs(year, country) {
-                document.getElementById('totalPopulation').textContent = populationData[year][country];
-                document.getElementById('totalGDP').textContent = gdpData[year][country];
+                document.getElementById('totalPopulation').textContent = formatPopulation(populationData[year][country]);
+                document.getElementById('totalGDP').textContent = formatGDP(gdpData[year][country]);
                 document.getElementById('lifeExpectancy').textContent = lifeExpectancyData[year][country];
                 document.getElementById('fertilityRate').textContent = fertilityData[year][country];
                 document.getElementById('mortalityRate').textContent = mortalityData[year][country];
