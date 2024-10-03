@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Expectancy Comparison</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .line {
+            fill: none;
+            stroke-width: 2;
+        }
+        .dot {
+            fill: white;
+            stroke-width: 2;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 6px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 3px;
+            pointer-events: none;
+            opacity: 0;
+        }
+        .legend {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Life Expectancy Comparison</h2>
+    <div id="chart"></div>
+
+    <script>
+        // Data for life expectancy of males and females in Norway and Sweden
+        const data = [
+            { year: 2010, norwayMale: 78.8, norwayFemale: 83.2, swedenMale: 79.5, swedenFemale: 83.5 },
+            { year: 2015, norwayMale: 80.4, norwayFemale: 84.1, swedenMale: 80.3, swedenFemale: 84.0 },
+            { year: 2020, norwayMale: 81.5, norwayFemale: 84.9, swedenMale: 80.6, swedenFemale: 84.3 },
+            { year: 2022, norwayMale: 81.7, norwayFemale: 85.1, swedenMale: 81.9, swedenFemale: 85.1 }
+        ];
+
+        // Define margins and dimensions for the chart
+        const margin = { top: 50, right: 50, bottom: 50, left: 60 },
+              width = 800 - margin.left - margin.right,
+              height = 400 - margin.top - margin.bottom;
+
+        // Create responsive SVG container
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")  // Makes the chart responsive
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Define X and Y scales
+        const x = d3.scaleLinear()
+            .domain(d3.extent(data, d => d.year))
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([d3.min(data, d => Math.min(d.norwayMale, d.norwayFemale, d.swedenMale, d.swedenFemale)) - 1,
+                     d3.max(data, d => Math.max(d.norwayMale, d.norwayFemale, d.swedenMale, d.swedenFemale)) + 1])
+            .range([height, 0]);
+
+        // Add X and Y axes
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+        svg.append("g")
+            .call(d3.axisLeft(y).tickFormat(d => d3.format(".1f")(d))); // Format Y-axis with decimals
+
+        // Color scale for different categories
+        const colorScale = d3.scaleOrdinal()
+            .domain(["Norway Male", "Norway Female", "Sweden Male", "Sweden Female"])
+            .range(["#8B008B", "#9370DB", "#FFD700", "#FFA500"]);
+
+        // Line generator function
+        const lineGenerator = d3.line()
+            .x(d => x(d.year))
+            .y(d => y(d.value));
+
+        // Tooltip for displaying details on hover
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Function to draw a line for each category (solid or dashed)
+        function drawLine(category, dashed = false) {
+            const path = svg.append("path")
+                .datum(data.map(d => ({ year: d.year, value: d[category] })))
+                .attr("fill", "none")
+                .attr("stroke", colorScale(category))
+                .attr("stroke-width", 2)
+                .attr("d", lineGenerator);
+
+            if (dashed) {
+                path.style("stroke-dasharray", ("3, 3"));
+            }
+        }
+
+        // Draw lines for Norway and Sweden (Males and Females)
+        drawLine("norwayMale");
+        drawLine("norwayFemale", true);
+        drawLine("swedenMale");
+        drawLine("swedenFemale", true);
+
+        // Add circles for each data point and tooltip functionality
+        svg.selectAll("circle")
+            .data(data.flatMap(d => [
+                { year: d.year, value: d.norwayMale, category: "Norway Male", country: "Norway", gender: "Male" },
+                { year: d.year, value: d.norwayFemale, category: "Norway Female", country: "Norway", gender: "Female" },
+                { year: d.year, value: d.swedenMale, category: "Sweden Male", country: "Sweden", gender: "Male" },
+                { year: d.year, value: d.swedenFemale, category: "Sweden Female", country: "Sweden", gender: "Female" }
+            ]))
+            .enter()
+            .append("circle")
+            .attr("cx", d => x(d.year))
+            .attr("cy", d => y(d.value))
+            .attr("r", 5)  // Slightly increased circle size for visibility
+            .attr("fill", d => colorScale(d.category))
+            .attr("stroke", d => colorScale(d.category))
+            .on("mouseover", function(event, d) {
+                tooltip.transition().duration(200).style("opacity", 0.9);
+                tooltip.html(`${d.country} ${d.gender} Life Expectancy<br>${d.year}: ${d3.format(".1f")(d.value)} years`)
+                    .style("left", (event.pageX + 5) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+        // Y axis label
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .attr("transform", "rotate(-90)")
+            .text("Age (years)");
+
+        // X axis label
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height + margin.bottom - 10)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text("Year");
+
+        // Add legend
+        const legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${width - 100}, ${height - 77})`);  // Adjust legend position
+
+        const categories = [
+            { name: "Norway Male", dashed: false },
+            { name: "Norway Female", dashed: true },
+            { name: "Sweden Male", dashed: false },
+            { name: "Sweden Female", dashed: true }
+        ];
+
+        // Create legend entries
+        categories.forEach((category, i) => {
+            const legendRow = legend.append("g")
+                .attr("transform", `translate(0, ${i * 20})`);
+
+            // Draw the lines for the legend (dashed for females)
+            legendRow.append("line")
+                .attr("x1", 0)
+                .attr("x2", 30)
+                .attr("y1", 5)
+                .attr("y2", 5)
+                .attr("stroke", colorScale(category.name))
+                .attr("stroke-width", 2)
+                .style("stroke-dasharray", category.dashed ? "3, 3" : "none");
+
+            // Add text labels to the legend
+            legendRow.append("text")
+                .attr("x", 40)
+                .attr("y", 9)
+                .attr("text-anchor", "start")
+                .text(category.name);
+        });
+    </script>
+</body>
+</html>

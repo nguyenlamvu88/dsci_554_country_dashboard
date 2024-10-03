@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacked Bar Chart: GDP vs Health Expenditure</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .bar {
+            transition: transform 0.2s;
+        }
+        .bar:hover {
+            transform: scale(1.05);
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-rect {
+            width: 10px;  /* Slightly increased legend boxes */
+            height: 10px;
+            margin-right: 5px;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            background: lightsteelblue;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2 style="text-align: center; font-size: 1rem;">Stacked Bar Chart: GDP vs Health Expenditure (in Billions USD)</h2>
+<div id="chart"></div>
+
+<script>
+    const margin = {top: 20, right: 10, bottom: 40, left: 60},
+        width = 500 - margin.left - margin.right,  // Adjusted width for better readability
+        height = 300 - margin.top - margin.bottom;  // Adjusted height for better readability
+
+    // Create responsive SVG container
+    const svg = d3.select("#chart")
+        .append("svg")
+        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+        .attr("preserveAspectRatio", "xMidYMid meet")
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Sample data: GDP and Health Expenditure converted to billions
+    const data = [
+        {year: 2005, country: "Norway", gdp: 308.884, health: 25.637},
+        {year: 2010, country: "Norway", gdp: 428.757, health: 38.159},
+        {year: 2015, country: "Norway", gdp: 385.802, health: 38.966},
+        {year: 2019, country: "Norway", gdp: 404.941, health: 42.518},
+        {year: 2005, country: "Sweden", gdp: 404.510, health: 37.215},
+        {year: 2010, country: "Sweden", gdp: 487.089, health: 46.727},
+        {year: 2015, country: "Sweden", gdp: 503.326, health: 56.373},
+        {year: 2019, country: "Sweden", gdp: 530.883, health: 57.866}
+    ];
+
+    // Define X and Y scales
+    const x0 = d3.scaleBand()
+        .domain(data.map(d => d.year))
+        .range([0, width])
+        .padding(0.2);
+
+    const x1 = d3.scaleBand()
+        .domain(["Norway", "Sweden"])
+        .range([0, x0.bandwidth()])
+        .padding(0.1);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.gdp + d.health)])
+        .nice()
+        .range([height, 0]);
+
+    // Color scale for each country's GDP and health expenditure
+    const colorNorway = d3.scaleOrdinal()
+        .domain(["gdp", "health"])
+        .range([d3.interpolateBlues(0.5), d3.interpolateBlues(0.8)]);
+
+    const colorSweden = d3.scaleOrdinal()
+        .domain(["gdp", "health"])
+        .range([d3.interpolateOranges(0.5), d3.interpolateOranges(0.8)]);
+
+    // X and Y axes with appropriate font sizes
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x0).tickFormat(d3.format("d")).ticks(4))
+        .style("font-size", "10px");  // Increased font size for X-axis ticks
+
+    svg.append("g")
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => d3.format(".1f")(d) + "B"))
+        .style("font-size", "10px");  // Increased font size for Y-axis ticks
+
+    // Group the data by year for each country
+    const groupedData = d3.groups(data, d => d.year);
+
+    // Draw the bars for each year and country
+    groupedData.forEach(([year, values]) => {
+        const yearGroup = svg.append("g")
+            .attr("transform", `translate(${x0(year)},0)`);
+
+        yearGroup.selectAll(".gdp")
+            .data(values)
+            .enter()
+            .append("rect")
+            .attr("class", "gdp")
+            .attr("x", d => x1(d.country))
+            .attr("y", d => y(d.gdp + d.health))
+            .attr("width", x1.bandwidth())
+            .attr("height", d => height - y(d.gdp + d.health))
+            .attr("fill", d => d.country === "Norway" ? colorNorway("gdp") : colorSweden("gdp"));
+
+        yearGroup.selectAll(".health")
+            .data(values)
+            .enter()
+            .append("rect")
+            .attr("class", "health")
+            .attr("x", d => x1(d.country))
+            .attr("y", d => y(d.health))
+            .attr("width", x1.bandwidth())
+            .attr("height", d => height - y(d.health))
+            .attr("fill", d => d.country === "Norway" ? colorNorway("health") : colorSweden("health"));
+    });
+
+    // Tooltip
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    svg.selectAll("rect")
+        .on("mouseover", function(event, d) {
+            tooltip.transition().duration(200).style("opacity", .9);
+            tooltip.html(`Country: ${d.country}<br>Year: ${d.year}<br>GDP: ${d3.format(".2f")(d.gdp)}B<br>Health: ${d3.format(".2f")(d.health)}B`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.transition().duration(500).style("opacity", 0);
+        });
+
+    // Add Y axis label
+    svg.append("text")
+        .attr("x", -margin.left + 80)
+        .attr("y", - 12)
+        .style("text-anchor", "middle")
+        .style("font-size", "10px")  // Increased font size for axis label
+        .text("Amount (in Billions USD)");
+
+    // Legend for Norway and Sweden (GDP and Health Expenditure)
+    const legendData = [
+        {label: "Norway GDP", color: d3.interpolateBlues(0.5)},
+        {label: "Norway Health Expenditure", color: d3.interpolateBlues(0.8)},
+        {label: "Sweden GDP", color: d3.interpolateOranges(0.5)},
+        {label: "Sweden Health Expenditure", color: d3.interpolateOranges(0.8)}
+    ];
+
+    const legend = svg.selectAll(".legend-item")
+        .data(legendData)
+        .enter()
+        .append("g")
+        .attr("class", "legend-item")
+        .attr("transform", (d, i) => `translate(${width - 410}, ${i * 12})`);  // Adjusted position for the legend
+
+    legend.append("rect")
+        .attr("width", 10)  // Increased legend box size
+        .attr("height", 10)
+        .attr("y", 7)
+        .style("fill", d => d.color);
+
+    legend.append("text")
+        .attr("x", 20)  // Adjusted x position for the text to provide space between box and label
+        .attr("y", 15)  // Adjusted y position for better alignment with the legend box
+        .style("font-size", "6px")  // Increased font size for the legend text
+        .text(d => d.label);
+</script>
+
+</body>
+</html>
+

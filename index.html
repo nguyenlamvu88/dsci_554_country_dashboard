@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Dashboard: Norway vs Sweden</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #2c2f33;
+            margin: 0;
+            padding: 0;
+            color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f4f4f4;
+            margin: 10px 0; /* Reduced margin */
+        }
+
+        /* Dropdown Container Styling */
+        .dropdown-container {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .dropdown-container select {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 8px;
+            background-color: #4e545c;
+            color: #f4f4f4;
+            border: none;
+            margin: 0 10px;
+        }
+
+        /* Dashboard container for KPI Cards */
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 10px;
+            gap: 15px; /* Increased gap for better separation */
+        }
+
+        /* Info cards at the top */
+        .info-card {
+            background-color: #3e4248;
+            border-radius: 12px;
+            padding: 20px;
+            width: 18%; /* Uniform card size */
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: scale(1.05);
+            background-color: #4e545c;
+        }
+
+        .info-card h2 {
+            font-size: 1.2rem; /* Increased font size for KPI titles */
+            color: #f4f4f4;
+            margin-bottom: 8px;
+        }
+
+        .info-card .value {
+            font-size: 2.2rem; /* Increased font size for KPI values */
+            font-weight: 700;
+            color: #1abc9c;
+            transition: all 0.3s ease-in-out; /* Smooth transition */
+        }
+
+        /* Chart Box Styling */
+        .chart-box {
+            background-color: #3e4248;
+            border-radius: 12px;
+            padding: 15px;
+            width: 48%; /* Two charts per row (horizontally) */
+            height: 450px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        
+        .chart-box:hover {
+            transform: scale(1.02);
+            background-color: #4e545c;
+        }
+
+        .chart-box h3 {
+            text-align: center;
+            font-size: 1.4rem; /* Slightly increased font size */
+            font-weight: 700;
+            color: #f4f4f4;
+            margin-bottom: 15px;
+        }
+
+        .chart-box iframe {
+            width: 100%;
+            height: 100%; /* Adjust iframe to take full height of chart box */
+            border: none;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+
+        /* KPI and Chart Spacing */
+        .chart-container,
+        .dropdown-container {
+            max-width: 1400px; /* Increased max width to accommodate larger charts */
+            margin: 0 auto;
+        }
+
+        /* Improved Responsiveness */
+        @media (max-width: 768px) {
+            .chart-box, .info-card {
+                width: 100%; /* Full width for smaller screens */
+                margin-bottom: 20px;
+            }
+
+            .dropdown-container select {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Comparative Dashboard for Norway and Sweden's Socio-Economic and Health Indicators</h1>
+
+    <!-- Dropdowns for year and country selection -->
+    <div class="dropdown-container">
+        <label for="yearSelect">Select Year:</label>
+        <select id="yearSelect">
+            <option value="2010">2010</option>
+            <option value="2015">2015</option>
+            <option value="2021">2021</option>
+        </select>
+
+        <label for="countrySelect">Select Country:</label>
+        <select id="countrySelect">
+            <option value="Norway">Norway</option>
+            <option value="Sweden">Sweden</option>
+        </select>
+    </div>
+
+    <!-- Cards displaying key indicators -->
+    <div class="chart-container">
+        <div class="info-card">
+            <h2>Total Population</h2>
+            <div class="value" id="totalPopulation">20,000,000</div>
+        </div>
+
+        <div class="info-card">
+            <h2>Total GDP</h2>
+            <div class="value" id="totalGDP">357</div>
+        </div>
+
+        <div class="info-card">
+            <h2>GDP per Capita</h2>
+            <div class="value" id="gdpPerCapita">65</div>
+        </div>
+
+        <div class="info-card">
+            <h2>Life Expectancy</h2>
+            <div class="value" id="lifeExpectancy">78</div>
+        </div>
+
+        <div class="info-card">
+            <h2>Fertility Rate</h2>
+            <div class="value" id="fertilityRate">1.8</div>
+        </div>
+
+        <div class="info-card">
+            <h2>Mortality Rate</h2>
+            <div class="value" id="mortalityRate">10.0</div>
+        </div>
+    </div>
+
+    <!-- Chart section displayed horizontally (two charts per row) -->
+    <div class="chart-container">
+        <!-- Population Demographics Chart -->
+        <div class="chart-box">
+            <h3>Population & Demographic</h3>
+            <iframe src="pop_demo_male_female.html"></iframe>
+        </div>
+
+        <!-- GDP Growth Chart -->
+        <div class="chart-box">
+            <h3>GDP Growth Over the Year</h3>
+            <iframe id="gdpIframe" src="gdp_growth.html"></iframe>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <!-- Health Expenditure Chart -->
+        <div class="chart-box">
+            <h3>Health Expenditure</h3>
+            <iframe src="health_gdp_stack_bar.html"></iframe>
+        </div>
+
+        <!-- Life Expectancy Chart -->
+        <div class="chart-box">
+            <h3>Life Expectancy Comparison</h3>
+            <iframe src="life_expectancy.html"></iframe>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <!-- Import/Export Chart -->
+        <div class="chart-box">
+            <h3>Import/Export</h3>
+            <iframe src="import_export.html"></iframe>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const populationData = {
+                "2010": {"Norway": 4890000, "Sweden": 9380000},
+                "2015": {"Norway": 5190000, "Sweden": 9840000},
+                "2021": {"Norway": 5400000, "Sweden": 10320000}
+            };
+
+            const gdpData = {
+                "2010": {"Norway": 428757, "Sweden": 487089},
+                "2015": {"Norway": 385802, "Sweden": 503326},
+                "2021": {"Norway": 404941, "Sweden": 530883}
+            };
+
+            const lifeExpectancyData = {
+                "2010": {"Norway": 81, "Sweden": 82},
+                "2015": {"Norway": 82, "Sweden": 83},
+                "2021": {"Norway": 83, "Sweden": 84}
+            };
+
+            const fertilityData = {
+                "2010": {"Norway": 1.9, "Sweden": 1.8},
+                "2015": {"Norway": 1.8, "Sweden": 1.9},
+                "2021": {"Norway": 1.7, "Sweden": 1.6}
+            };
+
+            const mortalityData = {
+                "2010": {"Norway": 10.2, "Sweden": 9.8},
+                "2015": {"Norway": 9.9, "Sweden": 9.5},
+                "2021": {"Norway": 9.5, "Sweden": 9.3}
+            };
+
+            // Function to update the KPI values
+            function updateKPIs(year, country) {
+                document.getElementById('totalPopulation').textContent = populationData[year][country];
+                document.getElementById('totalGDP').textContent = gdpData[year][country];
+                document.getElementById('lifeExpectancy').textContent = lifeExpectancyData[year][country];
+                document.getElementById('fertilityRate').textContent = fertilityData[year][country];
+                document.getElementById('mortalityRate').textContent = mortalityData[year][country];
+            }
+
+            // Event listeners for dropdown changes
+            const yearSelect = document.getElementById('yearSelect');
+            const countrySelect = document.getElementById('countrySelect');
+
+            yearSelect.addEventListener('change', function() {
+                const selectedYear = yearSelect.value;
+                const selectedCountry = countrySelect.value;
+                updateKPIs(selectedYear, selectedCountry);
+            });
+
+            countrySelect.addEventListener('change', function() {
+                const selectedYear = yearSelect.value;
+                const selectedCountry = countrySelect.value;
+                updateKPIs(selectedYear, selectedCountry);
+            });
+
+            // Initial load with default year and country
+            updateKPIs('2010', 'Norway');
+        });
+    </script>
+</body>
+</html>
