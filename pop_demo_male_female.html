@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Population Demographics: Norway vs Sweden</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .chart-container {
+            display: flex;
+            justify-content: space-evenly;
+            text-align: center;
+            margin: 1px auto;
+            max-width: 800px;
+        }
+
+        .chart-box {
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            font: 14px sans-serif;
+            background: lightsteelblue;
+            border: 0;
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 14px;  /* Increased font size for readability */
+        }
+
+        .legend-rect {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-right: 75px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            font-size: 18px;
+            margin-bottom: 0px;
+        }
+
+        .legend-container {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            margin-top: 1 px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dropdown-container">
+    <h2>Population Demographics: Norway vs Sweden</h2>
+    <label for="yearSelect">Select Year: </label>
+    <select id="yearSelect">
+        <option value="2010">2010</option>
+        <option value="2015">2015</option>
+        <option value="2020">2020</option>
+    </select>
+    
+    <label for="countrySelect">Select Country for Age: </label>
+    <select id="countrySelect">
+        <option value="Norway">Norway</option>
+        <option value="Sweden">Sweden</option>
+    </select>
+</div>
+
+<div class="chart-container">
+    <!-- Gender Demographics Chart -->
+    <div class="chart-box">
+        <h3>Population by Gender</h3>
+        <div id="gender-pie-chart"></div>
+        <div id="gender-legend" class="legend-container"></div>
+    </div>
+
+    <!-- Age Demographics Chart -->
+    <div class="chart-box">
+        <h3>Population by Age</h3>
+        <div id="age-pie-chart"></div>
+        <div id="age-legend" class="legend-container"></div>
+    </div>
+</div>
+
+<script>
+    // Updated population data structure
+    const populationData = {
+        2010: {
+            gender: [
+                { label: "Norway Males", value: 2.44 },
+                { label: "Norway Females", value: 2.45 },
+                { label: "Sweden Males", value: 4.67 },
+                { label: "Sweden Females", value: 4.71 }
+            ],
+            age: {
+                Norway: [
+                    { label: "0-14 years", value: 1.7 },
+                    { label: "15-64 years", value: 7.5 },
+                    { label: "65+ years", value: 2.4 }
+                ],
+                Sweden: [
+                    { label: "0-14 years", value: 1.9 },
+                    { label: "15-64 years", value: 7.7 },
+                    { label: "65+ years", value: 2.5 }
+                ]
+            }
+        },
+        2015: {
+            gender: [
+                { label: "Norway Males", value: 2.55 },
+                { label: "Norway Females", value: 2.57 },
+                { label: "Sweden Males", value: 4.85 },
+                { label: "Sweden Females", value: 4.90 }
+            ],
+            age: {
+                Norway: [
+                    { label: "0-14 years", value: 1.6 },
+                    { label: "15-64 years", value: 7.3 },
+                    { label: "65+ years", value: 2.5 }
+                ],
+                Sweden: [
+                    { label: "0-14 years", value: 1.8 },
+                    { label: "15-64 years", value: 7.6 },
+                    { label: "65+ years", value: 2.6 }
+                ]
+            }
+        },
+        2020: {
+            gender: [
+                { label: "Norway Males", value: 2.68 },
+                { label: "Norway Females", value: 2.70 },
+                { label: "Sweden Males", value: 5.10 },
+                { label: "Sweden Females", value: 5.15 }
+            ],
+            age: {
+                Norway: [
+                    { label: "0-14 years", value: 1.5 },
+                    { label: "15-64 years", value: 7.0 },
+                    { label: "65+ years", value: 3.0 }
+                ],
+                Sweden: [
+                    { label: "0-14 years", value: 1.7 },
+                    { label: "15-64 years", value: 7.4 },
+                    { label: "65+ years", value: 3.1 }
+                ]
+            }
+        }
+    };
+
+    // Set chart dimensions
+    const width = 250, height = 250, margin = 40;
+    const radius = Math.min(width, height) / 2 - margin;
+
+    // Define the arc for normal state and hover state
+    const arc = d3.arc().innerRadius(0).outerRadius(radius);
+    const arcHover = d3.arc().innerRadius(0).outerRadius(radius + 10); // Add 10px on hover for pop-out effect
+
+    // Color schemes
+    const genderColor = d3.scaleOrdinal(["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]);
+    const ageColor = d3.scaleOrdinal(["#9467bd", "#8c564b", "#e377c2"]);
+
+    // Pie generator
+    const pie = d3.pie().value(d => d.value);
+
+    // Tooltip
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+    // Function to create or update pie charts
+    function updateChart(year, chartData, selector, colorScale, legendSelector) {
+        let svg = d3.select(selector).select("svg");
+
+        // Reuse the existing svg or create a new one
+        if (svg.empty()) {
+            svg = d3.select(selector)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width / 2},${height / 2})`);
+        } else {
+            svg = svg.select("g");
+        }
+
+        // Bind data to paths (the chart sectors)
+        const path = svg.selectAll("path").data(pie(chartData), d => d.data.label);
+
+        // Enter new arcs
+        path.enter()
+            .append("path")
+            .merge(path)
+            .attr("d", arc)
+            .attr("fill", d => colorScale(d.data.label))
+            .attr("stroke", "white")
+            .style("stroke-width", "2px")
+            .on("mouseover", function(event, d) {
+                // On mouseover, enlarge the pie slice
+                d3.select(this).transition().duration(200).attr("d", arcHover);
+                tooltip.transition().duration(200).style("opacity", 0.9);
+                tooltip.html(`${d.data.label}<br>${d.data.value} million`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                // On mouseout, shrink back the pie slice
+                d3.select(this).transition().duration(200).attr("d", arc);
+                tooltip.transition().duration (500).style("opacity", 0);
+            });
+
+        // Remove old paths
+        path.exit().remove();
+
+        // Update the legend
+        const legend = d3.select(legendSelector).selectAll(".legend-item").data(chartData);
+
+        legend.enter()
+            .append("div")
+            .attr("class", "legend-item")
+            .merge(legend)
+            .html(d => `<div class='legend-rect' style='background-color:${colorScale(d.label)}'></div> ${d.label}`);
+
+        legend.exit().remove();
+    }
+
+    // Initial render for both gender and age pie charts
+    const initialYear = "2010";
+    const initialCountry = "Norway";
+    updateChart(initialYear, populationData[initialYear].gender, "#gender-pie-chart", genderColor, "#gender-legend");
+    updateChart(initialYear, populationData[initialYear].age[initialCountry], "#age-pie-chart", ageColor, "#age-legend");
+
+    // Listen for dropdown changes to update charts
+    d3.select('#yearSelect').on('change', function() {
+        const selectedYear = d3.select(this).property('value');
+        const selectedCountry = d3.select('#countrySelect').property('value');
+
+        // Update both charts based on the selected year and country for age
+        updateChart(selectedYear, populationData[selectedYear].gender, "#gender-pie-chart", genderColor, "#gender-legend");
+        updateChart(selectedYear, populationData[selectedYear].age[selectedCountry], "#age-pie-chart", ageColor, "#age-legend");
+    });
+
+    d3.select('#countrySelect').on('change', function() {
+        const selectedCountry = d3.select(this).property('value');
+        const selectedYear = d3.select('#yearSelect').property('value');
+
+        // Update the age chart based on the selected country and year
+        updateChart(selectedYear, populationData[selectedYear].age[selectedCountry], "#age-pie-chart", ageColor, "#age-legend");
+    });
+
+</script>
+
+</body>
+</html>
+

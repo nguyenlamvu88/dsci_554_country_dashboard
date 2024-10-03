@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import/Export and Trade Balance: Norway vs Sweden</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-rect {
+            width: 10px;
+            height: 10px;
+            margin-right: 5px;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 6px;
+            background: lightsteelblue;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Style for the toggle button */
+        .toggle-button {
+            margin-bottom: 20px;
+            padding: 6px 14px;
+            background-color: #d63fa4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toggle-button:hover {
+            background-color: #44e10b;
+        }
+    </style>
+</head>
+<body>
+
+<h2 style="text-align: center; font-size: 1rem;">Import/Export and Trade Balance: Norway vs Sweden</h2>
+
+<!-- Toggle button -->
+<div style="text-align: center;">
+    <button class="toggle-button" id="toggleCountry">Show Sweden Data</button>
+</div>
+
+<div id="chart"></div>
+
+<script>
+    const margin = {top: 40, right: 60, bottom: 40, left: 70},
+        width = 800 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    const svg = d3.select("#chart")
+        .append("svg")
+        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+        .attr("preserveAspectRatio", "xMidYMid meet")
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const data = [
+        {year: 1995, country: "Norway", imports: 32706, exports: 41740, balance: 9034},
+        {year: 2005, country: "Norway", imports: 55488, exports: 103759, balance: 48271},
+        {year: 2010, country: "Norway", imports: 77330, exports: 130657, balance: 53327},
+        {year: 2015, country: "Norway", imports: 76399, exports: 103785, balance: 27386},
+        {year: 2020, country: "Norway", imports: 81624, exports: 82749, balance: 1125},
+        {year: 1995, country: "Sweden", imports: 72435, exports: 79201, balance: 6766},
+        {year: 2005, country: "Sweden", imports: 113625, exports: 127997, balance: 14372},
+        {year: 2010, country: "Sweden", imports: 156164, exports: 181745, balance: 25581},
+        {year: 2015, country: "Sweden", imports: 140939, exports: 150364, balance: 9425},
+        {year: 2020, country: "Sweden", imports: 170432, exports: 176416, balance: 5984}
+    ];
+
+    const x = d3.scaleBand()
+        .domain(data.map(d => d.year))
+        .range([0, width])
+        .padding(0.2);
+
+    const yLeft = d3.scaleLinear()
+        .domain([0, d3.max(data, d => Math.max(d.imports, d.exports))])
+        .nice()
+        .range([height, 0]);
+
+    const yRight = d3.scaleLinear()
+        .domain([d3.min(data, d => d.balance), d3.max(data, d => d.balance)])
+        .nice()
+        .range([height, 0]);
+
+    const xAxis = d3.axisBottom(x);
+    const yAxisLeft = d3.axisLeft(yLeft);
+    const yAxisRight = d3.axisRight(yRight);
+
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(xAxis);
+
+    svg.append("g")
+        .call(yAxisLeft)
+        .append("text")
+        .attr("fill", "#000")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -60)  // Move further to the left for better readability
+        .attr("dy", "1em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text("Imports/Exports (in millions USD)");
+
+    svg.append("g")
+        .attr("transform", `translate(${width},0)`)
+        .call(yAxisRight)
+        .append("text")
+        .attr("fill", "#000")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", 100)
+        .attr("dy", "-3.5em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text("Trade Balance (in millions USD)");
+
+    // Tooltip setup
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    // Toggle country state variable
+    let isNorway = true;
+
+    // Function to update the chart based on country toggle
+    function updateChart(country) {
+        const filteredData = data.filter(d => d.country === country);
+
+        // Remove previous elements before adding new ones
+        svg.selectAll(".bar.imports, .bar.exports, .trade-line").remove();
+
+        // Bars for imports and exports
+        svg.selectAll(".bar.imports")
+            .data(filteredData)
+            .enter()
+            .append("rect")
+            .attr("class", "bar imports")
+            .attr("x", d => x(d.year) - x.bandwidth() / 4)
+            .attr("width", x.bandwidth() / 2)
+            .attr("y", d => yLeft(d.imports))
+            .attr("height", d => height - yLeft(d.imports))
+            .attr("fill", country === "Norway" ? "#1f77b4" : "#ff7f0e");
+
+        svg.selectAll(".bar.exports")
+            .data(filteredData)
+            .enter()
+            .append("rect")
+            .attr("class", "bar exports")
+            .attr("x", d => x(d.year) + x.bandwidth() / 4)
+            .attr("width", x.bandwidth() / 2)
+            .attr("y", d => yLeft(d.exports))
+            .attr("height", d => height - yLeft(d.exports))
+            .attr("fill", country === "Norway" ? "#aec7e8" : "#ffbb78");
+
+        // Line for trade balance
+        const line = d3.line()
+            .x(d => x(d.year) + x.bandwidth() / 2)
+            .y(d => yRight(d.balance));
+
+        svg.append("path")
+            .datum(filteredData)
+            .attr("class", "trade-line")
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-width", 2)
+            .attr("d", line);
+
+        // Tooltip interactivity
+        svg.selectAll(".bar")
+            .on("mouseover", function(event, d) {
+                tooltip.transition().duration(200).style("opacity", 0.9);
+                tooltip.html(`Year: ${d.year}<br>Imports: ${d.imports}M<br>Exports: ${d.exports}M<br>Trade Balance: ${d.balance}M`)
+                    .style("left", (event.pageX + 5) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+    }
+
+    // Initial chart render for Norway
+    updateChart("Norway");
+
+    // Toggle between Norway and Sweden
+    document.getElementById("toggleCountry").addEventListener("click", function() {
+        const country = isNorway ? "Sweden" : "Norway";
+        updateChart(country);
+        this.textContent = isNorway ? "Show Norway Data" : "Show Sweden Data";
+        isNorway = !isNorway;
+    });
+
+    // Legend
+    const legendData = [
+        {label: "Norway Imports", color: "#1f77b4"},
+        {label: "Norway Exports", color: "#aec7e8"},
+        {label: "Sweden Imports", color: "#ff7f0e"},
+        {label: "Sweden Exports", color: "#ffbb78"},
+        {label: "Trade Balance", color: "red"}
+    ];
+
+    const legend = svg.selectAll(".legend-item")
+        .data(legendData)
+        .enter()
+        .append("g")
+        .attr("class", "legend-item")
+        .attr("transform", (d, i) => `translate(${i * 130}, -30)`);
+
+    legend.append("rect")
+        .attr("class", "legend-rect")
+        .attr("width", 10)
+        .attr("height", 10)
+        .attr("fill", d => d.color);
+
+    legend.append("text")
+        .attr("x", 15)
+        .attr("y", 9)
+        .style("font-size", "10px")
+        .text(d => d.label);
+</script>
+
+</body>
+</html>
